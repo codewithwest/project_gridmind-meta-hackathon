@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { meta, META_MODEL } from "@/lib/meta/client";
+import { getMetaClient, META_MODEL } from "@/lib/meta/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,7 +57,15 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!process.env.MODEL_API_KEY) {
+    return NextResponse.json(
+      { error: "The energy advisor is not configured yet. The core simulator works without AI." },
+      { status: 503 },
+    );
+  }
+
   try {
+    const meta = getMetaClient();
     const response = await meta.responses.create({
       model: META_MODEL,
       input: [
