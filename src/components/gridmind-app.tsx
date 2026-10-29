@@ -113,9 +113,9 @@ export function GridMindApp() {
 
         <div className="section-heading"><div><div className="section-kicker">CALCULATED FROM YOUR INPUTS</div><h2>Energy overview</h2></div><span className="assumption-note"><CircleHelp size={14}/> Estimates, not measurements</span></div>
         <div className="metrics-grid" id="system">
-          <MetricCard label="Estimated solar/day" value={fmt(results.generation)} unit=" kWh" note={fmt(system.solarKw)} kW array · adjusted for sun hours icon={Sun} trend="up"/>
-          <MetricCard label="Usable battery" value={fmt(results.usableBattery)} unit=" kWh" note={fmt(system.batteryUsable * 100, 0)}% assumed usable icon={BatteryCharging}/>
-          <MetricCard label="Daily load" value={fmt(results.demand)} unit=" kWh" note={fmt(results.inverterLoad)} kW combined nameplate load icon={Bolt}/>
+          <MetricCard label="Estimated solar/day" value={fmt(results.generation)} unit=" kWh" note={fmt(system.solarKw) + " kW array · adjusted for sun hours"} icon={Sun} trend="up"/>
+          <MetricCard label="Usable battery" value={fmt(results.usableBattery)} unit=" kWh" note={fmt(system.batteryUsable * 100, 0) + "% assumed usable"} icon={BatteryCharging}/>
+          <MetricCard label="Daily load" value={fmt(results.demand)} unit=" kWh" note={fmt(results.inverterLoad) + " kW combined nameplate load"} icon={Bolt}/>
           <MetricCard label="Energy balance" value={(results.surplus >= 0 ? "+" : "") + fmt(results.surplus)} unit=" kWh/day" note={results.surplus >= 0 ? "Estimated daily surplus" : "Estimated daily shortfall"} icon={Waves} trend={results.surplus >= 0 ? "up" : "down"}/>
         </div>
 
