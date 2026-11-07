@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, BatteryCharging, Cable, CircleAlert, Factory, Grid3X3, Lightbulb, Plus, RotateCcw, Save, Search, Settings2, Sun, Trash2, Waves, X, Zap } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { Activity, Cable, CircleAlert, Grid3X3, Plus, RotateCcw, Save, Search, Settings2, Sun, Trash2 } from "lucide-react";
 
 type Kind = "solar"|"battery"|"inverter"|"grid"|"generator"|"pump"|"light"|"fridge"|"socket"|"board"|"starter"|"controller";
 type Item = { id:string; kind:Kind; name:string; x:number; z:number; watts:number; voltage:number; quantity:number; phase:"single"|"three"; rating:number; energyKwh:number; peakAmps?:number; surgeWatts?:number };
@@ -69,7 +69,7 @@ export function PowerhouseBuilder(){
  const remove=()=>{if(!current)return;setItems(v=>v.filter(i=>i.id!==current.id));setEdges(v=>v.filter(e=>e.from!==current.id&&e.to!==current.id));setSelected("");setSaved(false);};
  const connect=()=>{if(!selected)return;if(!firstLink){setFirstLink(selected);setLinkMode(true);return;}if(firstLink!==selected)setEdges(v=>[...v,{id:uid(),from:firstLink,to:selected}]);setFirstLink("");setLinkMode(false);setSaved(false);};
  const save=()=>{localStorage.setItem("gridmind-powerhouse-v1",JSON.stringify({items,edges}));setSaved(true);};
- const onDown=(e:React.PointerEvent<HTMLCanvasElement>)=>{const rect=e.currentTarget.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;let hit:Item|undefined;let best=44;for(const item of items){const p=project(item.x,.55,item.z,camera,rect.width,rect.height),d=Math.hypot(p.x-x,p.y-y);if(d<best){best=d;hit=item;}}if(hit){setSelected(hit.id);dragRef.current={x:e.clientX,y:e.clientY,mode:"move",id:hit.id};}else dragRef.current={x:e.clientX,y:e.clientY,mode:"orbit",id:""};e.currentTarget.setPointerCapture(e.pointerId);};
+ const onDown=(e:PointerEvent<HTMLCanvasElement>)=>{const rect=e.currentTarget.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;let hit:Item|undefined;let best=44;for(const item of items){const p=project(item.x,.55,item.z,camera,rect.width,rect.height),d=Math.hypot(p.x-x,p.y-y);if(d<best){best=d;hit=item;}}if(hit){setSelected(hit.id);dragRef.current={x:e.clientX,y:e.clientY,mode:"move",id:hit.id};}else dragRef.current={x:e.clientX,y:e.clientY,mode:"orbit",id:""};e.currentTarget.setPointerCapture(e.pointerId);};
  const onMove=(e:React.PointerEvent<HTMLCanvasElement>)=>{const d=dragRef.current;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;d.x=e.clientX;d.y=e.clientY;if(d.mode==="orbit")setCamera(c=>({...c,yaw:c.yaw+dx*.008,pitch:Math.max(.15,Math.min(1.2,c.pitch+dy*.006))}));else update(d.id,{x:(items.find(i=>i.id===d.id)?.x??0)+dx*.045,z:(items.find(i=>i.id===d.id)?.z??0)+dy*.045});};
  const onUp=()=>{dragRef.current=null;};
  const draw=useCallback(()=>{
