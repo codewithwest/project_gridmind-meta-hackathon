@@ -96,6 +96,7 @@ export function GridMindApp() {
         <a className="nav-item" href="#system"><Sun size={17}/> My system</a>
         <a className="nav-item" href="#equipment"><Camera size={17}/> Equipment</a>
         <a className="nav-item" href="#scenarios"><Waves size={17}/> Scenarios</a>
+        <a className="nav-item" href="/designer"><Activity size={17}/> System designer</a>
       </nav>
       <div className="sidebar-bottom"><div className="status-dot"/><div><strong>Local demo</strong><small>No account · No live hardware</small></div></div>
     </aside>
@@ -106,7 +107,7 @@ export function GridMindApp() {
           <div className="eyebrow"><span className="eyebrow-line"/> ENERGY INTELLIGENCE</div>
           <h1>Know your energy.<br/><span>Own your next move.</span></h1>
           <p>Build a picture of your energy system, change assumptions, and explore what your setup could support.</p>
-          <a className="primary-link" href="#scenarios">Run a scenario <span>↗</span></a>
+          <a className="primary-link" href="/designer">Open system designer <span>↗</span></a>
         </div><div className="hero-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="sun-core"><Sun size={36}/></div><div className="art-node node-solar"><Sun size={17}/> Solar</div><div className="art-node node-battery"><BatteryCharging size={17}/> Storage</div><div className="art-node node-home"><Bolt size={17}/> Loads</div><div className="flow-line flow-a"/><div className="flow-line flow-b"/><div className="flow-line flow-c"/></div></section>
 
         <div className="toolbar"><div><span className="section-kicker">YOUR WORKSPACE</span><p className="toolbar-note">Edit the sample values to model your own installation.</p></div><div className="toolbar-actions"><button className="secondary-button" onClick={resetProject}><RotateCcw size={14}/> Reset sample</button><button className="save-button" onClick={saveProject}><Save size={14}/> {saved ? "Saved locally" : "Save project"}</button></div></div>
