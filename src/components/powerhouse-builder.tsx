@@ -33,6 +33,7 @@ const initial:Item[]=[
  {id:"light-a",kind:"light",name:"House lighting",x:3,z:3,watts:100,voltage:230,rating:10,energyKwh:0,quantity:1,phase:"single"},
  {id:"fridge-a",kind:"fridge",name:"Defy bar fridge",x:1,z:3,watts:150,voltage:230,rating:5,energyKwh:0,quantity:1,phase:"single"},
 ];
+const initialEdges:LinkEdge[]=[{id:"wire-pv",from:"pv-a",to:"inverter-a"},{id:"wire-battery",from:"battery-a",to:"inverter-a"},{id:"wire-inverter",from:"inverter-a",to:"board-a"},{id:"wire-starter",from:"board-a",to:"starter-a"},{id:"wire-pump",from:"starter-a",to:"pump-a"},{id:"wire-light",from:"board-a",to:"light-a"},{id:"wire-fridge",from:"board-a",to:"fridge-a"}];
 const cubePositions=new Float32Array([
  -0.5,-0.5,0.5, .5,-.5,.5, .5,.5,.5, -.5,-.5,.5, .5,.5,.5, -.5,.5,.5,
  .5,-.5,-.5, -.5,-.5,-.5, -.5,.5,-.5, .5,-.5,-.5, -.5,.5,-.5, .5,.5,-.5,
@@ -92,7 +93,8 @@ export function PowerhouseBuilder(){
   for(const edge of edges){const a=items.find(i=>i.id===edge.from),b=items.find(i=>i.id===edge.to);if(!a||!b)continue;const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz),steps=Math.max(2,Math.ceil(len*8)),isDc=a.kind==="solar"||a.kind==="battery"||b.kind==="solar"||b.kind==="battery",wireColor=isDc?[.46,.62,.37,1]:[.26,.47,.65,1];for(let n=0;n<steps;n++){const t=n/steps;drawCube(a.x+dx*t,.12,a.z+dz*t,.055,.055,.055,wireColor);}const flow=running?(flowTick%24)/24:.5;drawCube(a.x+dx*flow,.17,a.z+dz*flow,.14,.14,.14,[.63,.98,.77,1]);}
   gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);
  },[items,edges,selected,camera,running,flowTick]);
- useEffect(()=>{draw();setCanvasReady(true);},[draw]);\n useEffect(()=>{if(!running)return;const timer=window.setInterval(()=>setFlowTick(v=>v+1),90);return()=>window.clearInterval(timer);},[running]);
+ useEffect(()=>{draw();setCanvasReady(true);},[draw]);
+ useEffect(()=>{if(!running)return;const timer=window.setInterval(()=>setFlowTick(v=>v+1),90);return()=>window.clearInterval(timer);},[running]);
  const grouped=["Sources","Storage","Conversion","Distribution","Loads"];
  const visible=catalog.filter(c=>c.label.toLowerCase().includes(search.toLowerCase()));
  const status=totals.loads>totals.inverter?"overload":totals.loads>totals.inverter*.8?"near":"ok";
