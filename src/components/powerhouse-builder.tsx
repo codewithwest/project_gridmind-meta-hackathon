@@ -93,7 +93,22 @@ export function PowerhouseBuilder(){
   drawCube(0,-.28,0,14,.35,11,[.09,.14,.14,1]);
   for(let x=-6;x<=6;x++)drawCube(x,-.095,0,.012,.008,10,[.16,.23,.22,1]);
   for(let z=-5;z<=5;z++)drawCube(0,-.094,z,14,.008,.012,[.16,.23,.22,1]);
-  for(const item of items){const spec=catalog.find(c=>c.kind===item.kind)!;const size=item.kind==="solar"?[1.25,.12,.85]:item.kind==="pump"?[.55,1.2,.55]:item.kind==="light"?[.48,.28,.48]:item.kind==="fridge"?[.65,1,.6]:item.kind==="board"?[.75,1.2,.35]:item.kind==="battery"?[.8,1,.65]:item.kind==="inverter"?[.9,1.1,.5]:[.75,.7,.55];const col:[number,number,number,number]=item.id===selected?[.39,.82,.62,1]:[spec.color[0],spec.color[1],spec.color[2],1];drawCube(item.x,.35,item.z,size[0],size[1],size[2],col);drawCube(item.x,.35+size[1]/2+.035,item.z,size[0]*.72,.035,size[2]*.72,[.68,.79,.72,1]);}
+  for(const item of items){
+   const spec=catalog.find(c=>c.kind===item.kind)!;
+   const size=item.kind==="solar"?[2.35,.12,.95]:item.kind==="pump"?[.55,1.15,.55]:item.kind==="light"?[.48,.28,.48]:item.kind==="fridge"?[.65,1,.6]:item.kind==="board"?[.75,1.2,.35]:item.kind==="battery"?[.8,1,.65]:item.kind==="inverter"?[.9,1.1,.5]:item.kind==="wind"?[.5,2.4,.5]:[.75,.7,.55];
+   const col:[number,number,number,number]=item.id===selected?[.39,.82,.62,1]:[spec.color[0],spec.color[1],spec.color[2],1];
+   drawCube(item.x,.35,item.z,size[0],size[1],size[2],col);
+   drawCube(item.x,.35+size[1]/2+.035,item.z,size[0]*.72,.035,size[2]*.72,[.68,.79,.72,1]);
+   if(item.kind==="solar"){for(let a=0;a<3;a++)for(let b=0;b<2;b++)drawCube(item.x-.78+a*.78,.43,item.z-.24+b*.48,.7,.025,.42,[.055,.19,.27,1]);}
+   if(item.kind==="battery"){drawCube(item.x-.2,.9,item.z-.15,.12,.12,.12,[.85,.72,.47,1]);drawCube(item.x+.2,.9,item.z-.15,.12,.12,.12,[.24,.28,.29,1]);}
+   if(item.kind==="inverter"){drawCube(item.x,.43,item.z-.27,.42,.28,.035,[.08,.18,.17,1]);drawCube(item.x+.25,.43,item.z-.3,.06,.06,.025,[.35,.9,.63,1]);}
+   if(item.kind==="board"){drawCube(item.x,.38,item.z-.2,.53,.82,.035,[.14,.2,.19,1]);for(let n=0;n<4;n++)drawCube(item.x-.17+n*.11,.48,item.z-.23,.055,.28,.045,[.72,.74,.65,1]);}
+   if(item.kind==="starter"){drawCube(item.x,.38,item.z-.3,.36,.28,.035,[.09,.18,.16,1]);}
+   if(item.kind==="pump"){drawCube(item.x,.35,item.z,.28,1.55,.28,[.48,.57,.62,1]);drawCube(item.x,.35+1.05,item.z,.48,.16,.48,[.18,.32,.42,1]);}
+   if(item.kind==="light"){drawCube(item.x,.95,item.z,.07,1.2,.07,[.63,.65,.53,1]);drawCube(item.x,1.58,item.z,.38,.16,.38,[.95,.78,.42,1]);}
+   if(item.kind==="wind"){drawCube(item.x,1.75,item.z,.1,2.5,.1,[.68,.76,.76,1]);drawCube(item.x,2.95,item.z,.25,.25,.25,[.82,.88,.84,1]);drawCube(item.x,3.25,item.z,.08,.65,.08,[.85,.9,.88,1]);drawCube(item.x,2.95,item.z,.65,.08,.08,[.85,.9,.88,1]);}
+   if(item.kind==="generator"){drawCube(item.x,.76,item.z-.31,.4,.24,.05,[.18,.22,.22,1]);}
+  }
   // Links are rendered as thin, segmented cable spans.
   for(const edge of edges){const a=items.find(i=>i.id===edge.from),b=items.find(i=>i.id===edge.to);if(!a||!b)continue;const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz),steps=Math.max(2,Math.ceil(len*8)),isDc=a.kind==="solar"||a.kind==="battery"||b.kind==="solar"||b.kind==="battery",wireColor:[number,number,number,number]=isDc?[.46,.62,.37,1]:[.26,.47,.65,1];for(let n=0;n<steps;n++){const t=n/steps;drawCube(a.x+dx*t,.12,a.z+dz*t,.055,.055,.055,wireColor);}const flow=running?(flowTick%24)/24:.5;drawCube(a.x+dx*flow,.17,a.z+dz*flow,.14,.14,.14,[.63,.98,.77,1]);}
   gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);
