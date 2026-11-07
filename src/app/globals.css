@@ -280,3 +280,5 @@ button{cursor:pointer}
 .review-grid .review-info strong{color:#a8e5c0}
 @media(max-width:900px){.review-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.review-grid{grid-template-columns:1fr}}
+
+.studio-reset{display:flex;align-items:center;gap:6px;padding:10px 11px;border:1px solid #35464a;border-radius:6px;background:#141f22;color:#b8c7c1;font-size:10px}
