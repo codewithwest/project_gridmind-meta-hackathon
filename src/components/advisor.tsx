@@ -45,7 +45,7 @@ export function Advisor() {
         <textarea id="question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={800} rows={3} required />
         <div className="form-bottom"><span>{question.length}/800 characters</span><button type="submit" disabled={loading || !question.trim()}>{loading ? <LoaderCircle className="spin" size={16} /> : <Send size={16} />} {loading ? "Thinking…" : "Ask GridMind"} <ArrowUpRight size={15} /></button></div>
       </form>
-      {answer && <div className="answer-box"><strong>GridMind's response</strong><p>{answer}</p></div>}
+      {answer && <div className="answer-box"><strong>GridMind&apos;s response</strong><p>{answer}</p></div>}
       {error && <p className="error-message" role="alert">{error}</p>}
     </section>
   );
