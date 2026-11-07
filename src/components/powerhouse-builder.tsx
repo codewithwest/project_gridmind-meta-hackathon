@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Activity, Cable, CircleAlert, Grid3X3, Plus, RotateCcw, Save, Search, Settings2, Sun, Trash2 } from "lucide-react";
 
-type Kind = "solar"|"battery"|"inverter"|"grid"|"generator"|"pump"|"light"|"fridge"|"socket"|"board"|"starter"|"controller";
+type Kind = "solar"|"battery"|"inverter"|"grid"|"generator"|"wind"|"hydro"|"pump"|"light"|"fridge"|"socket"|"ev"|"aircon"|"custom"|"board"|"starter"|"controller";
 type Item = { id:string; kind:Kind; name:string; x:number; z:number; watts:number; voltage:number; quantity:number; phase:"single"|"three"; rating:number; energyKwh:number; peakAmps?:number; surgeWatts?:number };
 type LinkEdge = { id:string; from:string; to:string };
 type Camera = { yaw:number; pitch:number; zoom:number };
 const catalog:{kind:Kind;label:string;group:string;watts:number;voltage:number;rating:number;color:[number,number,number]}[] = [
  {kind:"solar",label:"Solar panel",group:"Sources",watts:550,voltage:42,rating:550,color:[.10,.37,.39]},
  {kind:"grid",label:"Grid supply",group:"Sources",watts:5000,voltage:230,rating:5000,color:[.35,.43,.51]},
- {kind:"generator",label:"Generator",group:"Sources",watts:5000,voltage:230,rating:5000,color:[.48,.39,.27]},
+ {kind:"generator",label:"Generator",group:"Sources",watts:5000,voltage:230,rating:5000,color:[.48,.39,.27]},\n {kind:"wind",label:"Wind turbine",group:"Sources",watts:2000,voltage:48,rating:2000,color:[.32,.48,.58]},\n {kind:"hydro",label:"Micro-hydro source",group:"Sources",watts:1000,voltage:48,rating:1000,color:[.20,.43,.55]},
  {kind:"battery",label:"Battery",group:"Storage",watts:2560,voltage:25.6,rating:100,color:[.48,.32,.16]},
  {kind:"inverter",label:"Hybrid inverter",group:"Conversion",watts:3600,voltage:230,rating:3600,color:[.25,.40,.33]},
  {kind:"controller",label:"Charge controller",group:"Conversion",watts:3000,voltage:48,rating:60,color:[.22,.35,.46]},
@@ -19,10 +19,10 @@ const catalog:{kind:Kind;label:string;group:string;watts:number;voltage:number;r
  {kind:"pump",label:"Borehole pump",group:"Loads",watts:1100,voltage:230,rating:7, color:[.20,.34,.49]},
  {kind:"light",label:"Lighting circuit",group:"Loads",watts:100,voltage:230,rating:10,color:[.65,.53,.25]},
  {kind:"fridge",label:"Fridge",group:"Loads",watts:150,voltage:230,rating:5,color:[.48,.52,.54]},
- {kind:"socket",label:"Socket circuit",group:"Loads",watts:1000,voltage:230,rating:16,color:[.43,.40,.48]},
+ {kind:"socket",label:"Socket circuit",group:"Loads",watts:1000,voltage:230,rating:16,color:[.43,.40,.48]},\n {kind:"ev",label:"EV charger",group:"Loads",watts:7200,voltage:230,rating:32,color:[.39,.48,.42]},\n {kind:"aircon",label:"Air conditioner",group:"Loads",watts:1500,voltage:230,rating:10,color:[.40,.52,.58]},\n {kind:"custom",label:"Custom load",group:"Loads",watts:250,voltage:230,rating:10,color:[.50,.43,.48]},
 ];
 const uid=()=>Math.random().toString(36).slice(2,10);
-const totalsPlaceholder=(items:Item[])=>items.filter(i=>["pump","light","fridge","socket"].includes(i.kind)).reduce((sum,i)=>sum+i.watts*i.quantity,0);
+const totalsPlaceholder=(items:Item[])=>items.filter(i=>["pump","light","fridge","socket","ev","aircon","custom"].includes(i.kind)).reduce((sum,i)=>sum+i.watts*i.quantity,0);
 const initial:Item[]=[
  {id:"pv-a",kind:"solar",name:"PV string A · 3 × 550W",x:-4,z:-2,watts:550,voltage:126,rating:550,energyKwh:0,quantity:3,phase:"single"},
  {id:"battery-a",kind:"battery",name:"LiFePO₄ battery · 24V",x:-2,z:2,watts:2560,voltage:25.6,rating:100,energyKwh:2.56,peakAmps:120,quantity:1,phase:"single"},
@@ -60,7 +60,7 @@ export function PowerhouseBuilder(){
  const inverterItem=items.find(i=>i.kind==="inverter");
  const startupAcWatts=otherLoadWatts+pumpWatts*startMultiplier*(items.some(i=>i.kind==="starter")?(1-starterReduction/100):1);
  const startupDcWatts=startupAcWatts/.92;
- const batteryCurrent=Math.max(0,(startupDcWatts-Math.min(solarNow,items.filter(i=>i.kind==="solar").reduce((sum,i)=>sum+i.watts*i.quantity,0))-items.filter(i=>i.kind==="grid"||i.kind==="generator").reduce((sum,i)=>sum+i.watts*i.quantity,0))/Math.max(1,batteryItem?.voltage??24));
+ const batteryCurrent=Math.max(0,(startupDcWatts-Math.min(solarNow,items.filter(i=>i.kind==="solar").reduce((sum,i)=>sum+i.watts*i.quantity,0))-items.filter(i=>["grid","generator","wind","hydro"].includes(i.kind)).reduce((sum,i)=>sum+i.watts*i.quantity,0))/Math.max(1,batteryItem?.voltage??24));
  const bmsContinuous=batteryItem?.rating??100;
  const bmsPeak=batteryItem?.peakAmps??120;
  const inverterSurge=inverterItem?.surgeWatts??(inverterItem?.watts??0)*2;
