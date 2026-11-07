@@ -15,6 +15,7 @@ export function SystemDesigner() {
   const [batteryVoltage, setBatteryVoltage] = useState(25.6);
   const [bmsContinuous, setBmsContinuous] = useState(100);
   const [bmsPeak, setBmsPeak] = useState(120);
+  const [inverterSurge, setInverterSurge] = useState(7200);
   const [sunHours, setSunHours] = useState(5.5);
   const [pvEfficiency, setPvEfficiency] = useState(88);
   const [pumpHours, setPumpHours] = useState(1);
@@ -29,8 +30,9 @@ export function SystemDesigner() {
     const dailyDemand = 0.6 + 0.8 + 1.2 * pumpHours;
     const dailyBalance = dailySolar - dailyDemand;
     const continuousMargin = bmsContinuous - batteryAmps;
-    return { dcDemand, batteryWatts, batteryAmps, dailySolar, dailyDemand, dailyBalance, continuousMargin };
-  }, [solarWatts, startWatts, inverterEfficiency, batteryVoltage, bmsContinuous, sunHours, pvEfficiency, pumpHours]);
+    const nearLimit = batteryAmps >= bmsContinuous * 0.9;
+    return { dcDemand, batteryWatts, batteryAmps, dailySolar, dailyDemand, dailyBalance, continuousMargin, nearLimit, inverterSurgeOk: startWatts <= inverterSurge };
+  }, [solarWatts, startWatts, inverterEfficiency, batteryVoltage, bmsContinuous, inverterSurge, sunHours, pvEfficiency, pumpHours]);
 
   const critical = result.batteryAmps > bmsPeak;
   const elevated = result.batteryAmps > bmsContinuous;
@@ -65,7 +67,7 @@ export function SystemDesigner() {
         <div className="scene-pump"><div className="pump-body"><Droplets size={27}/><strong>1.5 HP</strong><small>BOREHOLE PUMP</small></div><span className="scene-label pump-label">Motor load</span></div>
         <div className="scene-flow-caption">{running ? "STARTUP EVENT · DC BUS UNDER LOAD" : "SELECT A SCENARIO TO TRACE POWER FLOW"}</div>
       </div>
-      <div className="scene-controls"><button className={!cloudy ? "scene-mode active" : "scene-mode"} onClick={()=>setCloud(false)}><Sun size={15}/> Strong sun</button><button className={cloudy ? "scene-mode active" : "scene-mode"} onClick={()=>setCloud(true)}><Cloud size={15}/> Cloud passes</button><button className="scene-run" onClick={()=>setRunning(!running)}><Play size={14}/>{running ? "Pause event" : "Run pump start"}</button><button className="scene-reset" onClick={()=>{setSolarWatts(1300);setStartWatts(3500);setInverterEfficiency(92);setBatteryVoltage(25.6);setBmsContinuous(100);setBmsPeak(120);setSunHours(5.5);setPvEfficiency(88);setPumpHours(1);setCloudy(false);setRunning(false);}}><RotateCcw size={14}/> Reset</button></div>
+      <div className="scene-controls"><button className={!cloudy ? "scene-mode active" : "scene-mode"} onClick={()=>setCloud(false)}><Sun size={15}/> Strong sun</button><button className={cloudy ? "scene-mode active" : "scene-mode"} onClick={()=>setCloud(true)}><Cloud size={15}/> Cloud passes</button><button className="scene-run" onClick={()=>setRunning(!running)}><Play size={14}/>{running ? "Pause event" : "Run pump start"}</button><button className="scene-reset" onClick={()=>{setSolarWatts(1300);setStartWatts(3500);setInverterEfficiency(92);setBatteryVoltage(25.6);setBmsContinuous(100);setBmsPeak(120);setInverterSurge(7200);setSunHours(5.5);setPvEfficiency(88);setPumpHours(1);setCloudy(false);setRunning(false);}}><RotateCcw size={14}/> Reset</button></div>
     </section>
 
     <section className="simulation-grid">
@@ -79,6 +81,7 @@ export function SystemDesigner() {
         <div className="panel-heading"><div><span className="section-kicker">03 / BATTERY LIMITS</span><h2>BMS configuration</h2></div><BatteryCharging size={19}/></div>
         <Parameter label="Continuous discharge limit" value={bmsContinuous} unit="A" min={50} max={200} step={5} onChange={setBmsContinuous}/>
         <Parameter label="Peak discharge limit" value={bmsPeak} unit="A" min={50} max={250} step={5} onChange={setBmsPeak}/>
+        <Parameter label="Inverter surge capability" value={inverterSurge} unit="W" min={3600} max={12000} step={100} onChange={setInverterSurge}/>
         <div className="parameter-divider"/>
         <div className="panel-heading"><div><span className="section-kicker">04 / DAILY ENERGY</span><h2>Operating assumptions</h2></div><Sun size={19}/></div>
         <Parameter label="Peak sun hours" value={sunHours} unit="h" min={2} max={8} step={0.25} onChange={setSunHours}/>
