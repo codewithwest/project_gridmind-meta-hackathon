@@ -1,8 +1,6 @@
-# GridMind — Meta Hackathon
+# GridMind — Powerhouse Studio
 
-GridMind is an interactive energy-planning prototype for homes and small farms. Configure an illustrative solar/battery system, add appliance loads, adjust solar assumptions, and inspect a transparent daily energy balance. Upload equipment photos to keep them alongside a local project.
-
-> **Demo disclaimer:** This app uses user-entered assumptions and simple estimates. It is not connected to live equipment, and it is not electrical design advice or safety certification.
+GridMind is an interactive 3D electrical-system planning workspace for homes, farms and small off-grid installations. Build a virtual power house, place equipment, connect components, edit nameplate values, and inspect first-pass system checks.
 
 ## Run locally
 
@@ -13,56 +11,26 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The dashboard and simulator work without an API key. No database or account is required.
-
-Optional environment setup for the later Meta Model API integration:
-
-```bash
-cp .env.example .env.local
-``
-
-Keep all API credentials server-side. Never commit secrets or expose API keys with a `NEXT_PUBLIC_` prefix.
+Open http://localhost:3000. The 3D workspace and simulator run in the browser and do not require API credentials.
 
 ## What works now
 
-- **Editable system assumptions:** solar array capacity, peak sun hours, PV system efficiency, battery capacity, usable battery fraction, and inverter rating.
-- **Appliance load builder:** add/remove loads and edit power, operating hours, quantity, and names.
-- **Deterministic calculations:** estimated daily solar generation, daily energy demand, surplus/deficit, usable battery capacity, and a simple combined nameplate load comparison against the inverter rating.
-- **Scenario control:** adjust solar output from 0–130% to explore changed production assumptions.
-- **Equipment inventory:** upload up to six image files (5 MB each); preview and remove them.
-- **Local save:** save project inputs and photos in the current browser's local storage, reset to the sample project, and continue without a server account.
+- **Interactive 3D workspace:** WebGL scene with orbit, zoom, component selection, drag-to-reposition and animated power-flow markers.
+- **Equipment library:** solar panels, grid supply, generators, wind turbines, micro-hydro, batteries, hybrid inverters, charge controllers, distribution boards, soft starters, borehole pumps, lights, fridges, socket circuits, EV chargers, air conditioners and custom loads.
+- **Add as many components as needed:** add multiple pumps/boreholes, lighting circuits, batteries, inverters and other equipment; edit each component's name, rated power, voltage, rating, quantity and phase.
+- **Connections:** create visual cable links between equipment; connected components are drawn in the 3D scene.
+- **Local projects:** save and restore the current equipment layout in browser local storage, or reset to the sample borehole installation.
+- **Live checks:** connected load against inverter nameplate capacity, installed PV, estimated daily PV yield, source/load balance and an illustrative pump-start estimate.
+- **BMS and surge warnings:** edit battery continuous and peak current limits, inverter surge rating, pump start multiplier, and assumed soft-starter reduction to explore how those assumptions affect the estimate.
+- **Design review:** flags for BMS limits, inverter surge, PV string/MPPT compatibility, phase and motor characteristics, protection, cable sizing and earthing.
 
-The sample values are illustrative. Solar generation is estimated as:
+## Simulation boundaries
 
-`array kW × peak sun hours × assumed PV efficiency × solar adjustment`
+The 3D renderer is a lightweight WebGL scene, not a detailed CAD/BIM model. Equipment geometry and cable paths are conceptual.
 
-Each appliance's estimated daily energy is:
+The electrical calculations are deterministic first-pass estimates. The pump-start estimate uses editable assumptions for motor starting multiplier and soft-starter reduction; it does not calculate a measured motor current waveform or reproduce a specific inverter/BMS overload curve. The current estimate uses the first battery in the bank and does not yet model series/parallel battery topology, battery voltage sag, detailed MPPT behaviour, power factor, harmonics, phase imbalance, cable voltage drop, protection coordination or earthing.
 
-`watts × hours/day × quantity ÷ 1,000`
-
-These formulas do not model weather forecasts, shading, inverter conversion details, battery charge/discharge limits, motor startup surge, time-of-use load overlap, wiring, or site-specific conditions. The battery-only equivalent is a rough energy ratio, not a guaranteed runtime prediction.
-
-## Model integration roadmap
-
-Meta model integrations are intentionally not required for the core app to function. Planned follow-up work:
-
-1. Muse Spark explanations grounded in the simulator's structured inputs and outputs (the model should explain, not replace, calculations).
-2. SAM 3.1 equipment-region segmentation and image overlays.
-3. Optional voice transcription and image generation, if useful to the demo.
-
-Official references:
-- https://dev.meta.ai/docs/overview
-- https://dev.meta.ai/docs/quickstart
-- https://dev.meta.ai/docs/authentication
-- https://dev.meta.ai/docs/api-reference
-
-## Safety and security
-
-- Photos and saved project state stay in browser local storage; this prototype does not upload them to an application server.
-- Browser storage is device/browser-specific and can be cleared by the user. Saving large photos can exceed browser storage limits.
-- Confirm equipment ratings from manufacturer labels/manuals; photos are not automatically interpreted.
-- Never use these estimates as electrical safety certification, installation instructions, or live equipment control.
-- Add authentication, server-side storage, rate limits, quotas, and privacy controls before public production use.
+A positive daily energy balance does not prove that the system can handle an instantaneous motor start. Always verify exact equipment datasheets and have a qualified electrical professional design and inspect the installation. This app does not control live equipment and is not an electrical design certificate.
 
 ## Development checks
 
@@ -71,3 +39,7 @@ npm run typecheck
 npm run lint
 npm run build
 ```
+
+## Privacy
+
+The equipment layout is saved in browser local storage on the current device/browser. There is no account, shared project database or live hardware connection in this prototype.
