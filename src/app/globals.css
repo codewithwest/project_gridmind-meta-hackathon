@@ -260,3 +260,8 @@ button{cursor:pointer}
 .scene-object-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .object-label{position:absolute;transform:translate(-50%,-100%);max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 6px;border:1px solid #3d6254;border-radius:4px;background:#101b19eF;color:#b8d7c8;font-size:8px;pointer-events:auto;cursor:pointer;box-shadow:0 3px 10px #0007}
 .object-label.active{border-color:#8be0b2;background:#193126;color:#d5ffe7}
+
+.sim-parameter{display:grid;gap:7px;margin:13px 0;color:#aab8b3;font-size:9px}
+.sim-parameter b{justify-self:end;color:var(--mint);font-size:10px}
+.sim-parameter input{width:100%;accent-color:var(--mint-strong)}
+.scenario-alert{padding:10px;border:1px solid #5d5038;border-radius:5px;background:#272116;color:#e9c58e;font-size:9px;line-height:1.55;margin:12px 0}
