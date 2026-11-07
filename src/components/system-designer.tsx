@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Activity, AlertTriangle, BatteryCharging, CheckCircle2, Cloud, Droplets,
   Gauge, Info, Play, RotateCcw, Sun, Zap,
@@ -42,7 +43,7 @@ export function SystemDesigner() {
 
   return <main className="designer-page">
     <header className="designer-top">
-      <div><a className="designer-back" href="/">← Back to overview</a><div className="section-kicker">GRIDMIND / SYSTEM DESIGNER</div><h1>Design it. <span>Stress-test it.</span></h1><p>Explore your proposed solar borehole system in a 3D-style workspace and simulate the electrical constraints before installation.</p></div>
+      <div><Link className="designer-back" href="/">← Back to overview</Link><div className="section-kicker">GRIDMIND / SYSTEM DESIGNER</div><h1>Design it. <span>Stress-test it.</span></h1><p>Explore your proposed solar borehole system in a 3D-style workspace and simulate the electrical constraints before installation.</p></div>
       <div className="designer-status"><span/> SIMULATION MODEL · ESTIMATES</div>
     </header>
 
