@@ -1,5 +1,5 @@
-import { GridMindApp } from "@/components/gridmind-app";
+import { PowerhouseBuilder } from "@/components/powerhouse-builder";
 
 export default function Home() {
-  return <GridMindApp />;
+  return <PowerhouseBuilder />;
 }
