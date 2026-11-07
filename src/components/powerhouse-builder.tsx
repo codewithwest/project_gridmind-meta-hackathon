@@ -1,0 +1,119 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Activity, BatteryCharging, Cable, CircleAlert, Factory, Grid3X3, Lightbulb, Plus, RotateCcw, Save, Search, Settings2, Sun, Trash2, Waves, X, Zap } from "lucide-react";
+
+type Kind = "solar"|"battery"|"inverter"|"grid"|"generator"|"pump"|"light"|"fridge"|"socket"|"board"|"starter"|"controller";
+type Item = { id:string; kind:Kind; name:string; x:number; z:number; watts:number; voltage:number; quantity:number; phase:"single"|"three"; rating:number };
+type LinkEdge = { id:string; from:string; to:string };
+type Camera = { yaw:number; pitch:number; zoom:number };
+const catalog:{kind:Kind;label:string;group:string;watts:number;voltage:number;rating:number;color:[number,number,number]}[] = [
+ {kind:"solar",label:"Solar panel",group:"Sources",watts:550,voltage:42,rating:550,color:[.10,.37,.39]},
+ {kind:"grid",label:"Grid supply",group:"Sources",watts:5000,voltage:230,rating:5000,color:[.35,.43,.51]},
+ {kind:"generator",label:"Generator",group:"Sources",watts:5000,voltage:230,rating:5000,color:[.48,.39,.27]},
+ {kind:"battery",label:"Battery",group:"Storage",watts:2560,voltage:25.6,rating:100,color:[.48,.32,.16]},
+ {kind:"inverter",label:"Hybrid inverter",group:"Conversion",watts:3600,voltage:230,rating:3600,color:[.25,.40,.33]},
+ {kind:"controller",label:"Charge controller",group:"Conversion",watts:3000,voltage:48,rating:60,color:[.22,.35,.46]},
+ {kind:"board",label:"Distribution board",group:"Distribution",watts:0,voltage:230,rating:63,color:[.42,.44,.42]},
+ {kind:"starter",label:"Soft starter",group:"Distribution",watts:0,voltage:230,rating:25,color:[.32,.43,.38]},
+ {kind:"pump",label:"Borehole pump",group:"Loads",watts:1100,voltage:230,rating:7, color:[.20,.34,.49]},
+ {kind:"light",label:"Lighting circuit",group:"Loads",watts:100,voltage:230,rating:10,color:[.65,.53,.25]},
+ {kind:"fridge",label:"Fridge",group:"Loads",watts:150,voltage:230,rating:5,color:[.48,.52,.54]},
+ {kind:"socket",label:"Socket circuit",group:"Loads",watts:1000,voltage:230,rating:16,color:[.43,.40,.48]},
+];
+const uid=()=>Math.random().toString(36).slice(2,10);
+const initial:Item[]=[
+ {id:"pv-a",kind:"solar",name:"PV string A · 3 × 550W",x:-4,z:-2,watts:1650,voltage:126,rating:1650,quantity:3,phase:"single"},
+ {id:"battery-a",kind:"battery",name:"LiFePO₄ battery · 24V",x:-2,z:2,watts:2560,voltage:25.6,rating:100,quantity:1,phase:"single"},
+ {id:"inverter-a",kind:"inverter",name:"Luxpower GETA · 3.6kW",x:0,z:0,watts:3600,voltage:230,rating:3600,quantity:1,phase:"single"},
+ {id:"board-a",kind:"board",name:"AC distribution board",x:2,z:0,watts:0,voltage:230,rating:63,quantity:1,phase:"single"},
+ {id:"starter-a",kind:"starter",name:"Carlo Gavazzi RSBS",x:4,z:-1,watts:0,voltage:230,rating:25,quantity:1,phase:"single"},
+ {id:"pump-a",kind:"pump",name:"Borehole pump 1 · 1.5 HP",x:5,z:2,watts:1100,voltage:230,rating:7,quantity:1,phase:"single"},
+ {id:"light-a",kind:"light",name:"House lighting",x:3,z:3,watts:100,voltage:230,rating:10,quantity:1,phase:"single"},
+ {id:"fridge-a",kind:"fridge",name:"Defy bar fridge",x:1,z:3,watts:150,voltage:230,rating:5,quantity:1,phase:"single"},
+];
+const cubePositions=new Float32Array([
+ -0.5,-0.5,0.5, .5,-.5,.5, .5,.5,.5, -.5,-.5,.5, .5,.5,.5, -.5,.5,.5,
+ .5,-.5,-.5, -.5,-.5,-.5, -.5,.5,-.5, .5,-.5,-.5, -.5,.5,-.5, .5,.5,-.5,
+ -.5,-.5,-.5, -.5,-.5,.5, -.5,.5,.5, -.5,-.5,-.5, -.5,.5,.5, -.5,.5,-.5,
+ .5,-.5,.5, .5,-.5,-.5, .5,.5,-.5, .5,-.5,.5, .5,.5,-.5, .5,.5,.5,
+ -.5,.5,.5, .5,.5,.5, .5,.5,-.5, -.5,.5,.5, .5,.5,-.5, -.5,.5,-.5,
+ -.5,-.5,-.5, .5,-.5,-.5, .5,-.5,.5, -.5,-.5,-.5, .5,-.5,.5, -.5,-.5,.5
+]);
+const identity=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+function multiply(a:Float32Array,b:Float32Array){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
+function perspective(f:number,aspect:number,near:number,far:number){const t=1/Math.tan(f/2),o=new Float32Array(16);o[0]=t/aspect;o[5]=t;o[10]=(far+near)/(near-far);o[11]=-1;o[14]=2*far*near/(near-far);return o;}
+function lookAt(eye:number[],center:number[],up:number[]){const norm=(v:number[])=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)},cross=(a:number[],b:number[])=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],sub=(a:number[],b:number[])=>a.map((x,i)=>x-b[i]);const z=norm(sub(eye,center)),x=norm(cross(up,z)),y=cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]),-(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]),-(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]),1]);}
+function model(x:number,y:number,z:number,sx:number,sy:number,sz:number){const m=identity();m[0]=sx;m[5]=sy;m[10]=sz;m[12]=x;m[13]=y;m[14]=z;return m;}
+function project(x:number,y:number,z:number,camera:Camera,w:number,h:number){const cy=Math.cos(camera.yaw),sy=Math.sin(camera.yaw),cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch);const rx=x*cy-z*sy,rz=x*sy+z*cy,ry=y*cp-rz*sp,depth=14*camera.zoom-(rz*cp+y*sp);const scale=Math.min(w,h)*.95/Math.max(5,depth);return {x:w/2+rx*scale,y:h*.53-ry*scale};}
+
+export function PowerhouseBuilder(){
+ const [items,setItems]=useState<Item[]>(initial),[edges,setEdges]=useState<LinkEdge[]>([]),[selected,setSelected]=useState("inverter-a"),[camera,setCamera]=useState<Camera>({yaw:-.72,pitch:.55,zoom:1}),[placing,setPlacing]=useState<Kind>("pump"),[linkMode,setLinkMode]=useState(false),[firstLink,setFirstLink]=useState(""),[search,setSearch]=useState(""),[saved,setSaved]=useState(false),[running,setRunning]=useState(false),[solarNow,setSolarNow]=useState(1300),[cloud,setCloud]=useState(false);
+ const canvasRef=useRef<HTMLCanvasElement>(null),dragRef=useRef<{x:number;y:number;mode:"orbit"|"move";id:string} | null>(null);
+ useEffect(()=>{try{const raw=localStorage.getItem("gridmind-powerhouse-v1");if(raw){const p=JSON.parse(raw);if(Array.isArray(p.items))setItems(p.items);if(Array.isArray(p.edges))setEdges(p.edges);}}catch{}},[]);
+ const current=items.find(i=>i.id===selected);
+ const totals=useMemo(()=>{const loads=items.filter(i=>["pump","light","fridge","socket"].includes(i.kind)).reduce((s,i)=>s+i.watts*i.quantity,0);const sources=items.filter(i=>["solar","grid","generator"].includes(i.kind)).reduce((s,i)=>s+i.watts*i.quantity,0);const inverter=items.filter(i=>i.kind==="inverter").reduce((s,i)=>s+i.watts,0);const batteries=items.filter(i=>i.kind==="battery").reduce((s,i)=>s+i.watts,0);const pv=items.filter(i=>i.kind==="solar").reduce((s,i)=>s+i.watts,0);return {loads,sources,inverter,batteries,pv,headroom:inverter-loads,solarBalance:pv*.78*5.5/1000-(loads/1000*8)}},[items]);
+ const update=(id:string,patch:Partial<Item>)=>{setItems(v=>v.map(i=>i.id===id?{...i,...patch}:i));setSaved(false)};
+ const addItem=(kind:Kind)=>{const spec=catalog.find(c=>c.kind===kind)!;const n=items.filter(i=>i.kind===kind).length+1;const item:Item={id:uid(),kind,name:spec.label+(n>1?" "+n:""),x:(Math.random()-.5)*5,z:(Math.random()-.5)*5,watts:spec.watts,voltage:spec.voltage,rating:spec.rating,quantity:1,phase:"single"};setItems(v=>[...v,item]);setSelected(item.id);setPlacing(kind);setSaved(false);};
+ const remove=()=>{if(!current)return;setItems(v=>v.filter(i=>i.id!==current.id));setEdges(v=>v.filter(e=>e.from!==current.id&&e.to!==current.id));setSelected("");setSaved(false);};
+ const connect=()=>{if(!selected)return;if(!firstLink){setFirstLink(selected);setLinkMode(true);return;}if(firstLink!==selected)setEdges(v=>[...v,{id:uid(),from:firstLink,to:selected}]);setFirstLink("");setLinkMode(false);setSaved(false);};
+ const save=()=>{localStorage.setItem("gridmind-powerhouse-v1",JSON.stringify({items,edges}));setSaved(true);};
+ const onDown=(e:React.PointerEvent<HTMLCanvasElement>)=>{const rect=e.currentTarget.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;let hit:Item|undefined;let best=44;for(const item of items){const p=project(item.x,.55,item.z,camera,rect.width,rect.height),d=Math.hypot(p.x-x,p.y-y);if(d<best){best=d;hit=item;}}if(hit){setSelected(hit.id);dragRef.current={x:e.clientX,y:e.clientY,mode:"move",id:hit.id};}else dragRef.current={x:e.clientX,y:e.clientY,mode:"orbit",id:""};e.currentTarget.setPointerCapture(e.pointerId);};
+ const onMove=(e:React.PointerEvent<HTMLCanvasElement>)=>{const d=dragRef.current;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;d.x=e.clientX;d.y=e.clientY;if(d.mode==="orbit")setCamera(c=>({...c,yaw:c.yaw+dx*.008,pitch:Math.max(.15,Math.min(1.2,c.pitch+dy*.006))}));else update(d.id,{x:(items.find(i=>i.id===d.id)?.x??0)+dx*.045,z:(items.find(i=>i.id===d.id)?.z??0)+dy*.045});};
+ const onUp=()=>{dragRef.current=null;};
+ const draw=useCallback(()=>{
+  const canvas=canvasRef.current;if(!canvas)return;const gl=canvas.getContext("webgl",{antialias:true,alpha:false});if(!gl)return;
+  const vs=gl.createShader(gl.VERTEX_SHADER)!;gl.shaderSource(vs,"attribute vec3 p; uniform mat4 mvp; void main(){gl_Position=mvp*vec4(p,1.0);}");gl.compileShader(vs);
+  const fs=gl.createShader(gl.FRAGMENT_SHADER)!;gl.shaderSource(fs,"precision mediump float; uniform vec4 tint; void main(){gl_FragColor=tint;}");gl.compileShader(fs);
+  const program=gl.createProgram()!;gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);gl.useProgram(program);
+  const buffer=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,cubePositions,gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(program,"p");gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,0,0);
+  const colorLoc=gl.getUniformLocation(program,"tint"),mvpLoc=gl.getUniformLocation(program,"mvp");
+  const w=canvas.clientWidth*devicePixelRatio,h=canvas.clientHeight*devicePixelRatio;if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}gl.viewport(0,0,w,h);gl.enable(gl.DEPTH_TEST);gl.clearColor(.045,.075,.075,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  const eye=[Math.sin(camera.yaw)*14*camera.zoom,8*camera.zoom,Math.cos(camera.yaw)*14*camera.zoom],view=lookAt(eye,[0,0,0],[0,1,0]),proj=perspective(.75,w/h,.1,100),vp=multiply(proj,view);
+  const drawCube=(x:number,y:number,z:number,sx:number,sy:number,sz:number,color:[number,number,number,number])=>{gl.uniformMatrix4fv(mvpLoc,false,multiply(vp,model(x,y,z,sx,sy,sz)));gl.uniform4fv(colorLoc,color);gl.drawArrays(gl.TRIANGLES,0,36);};
+  // Ground slab and subtle floor grid.
+  drawCube(0,-.28,0,14,.35,11,[.09,.14,.14,1]);
+  for(let x=-6;x<=6;x++)drawCube(x,-.095,0,.012,.008,10,[.16,.23,.22,1]);
+  for(let z=-5;z<=5;z++)drawCube(0,-.094,z,14,.008,.012,[.16,.23,.22,1]);
+  for(const item of items){const spec=catalog.find(c=>c.kind===item.kind)!;const size=item.kind==="solar"?[1.25,.12,.85]:item.kind==="pump"?[.55,1.2,.55]:item.kind==="light"?[.48,.28,.48]:item.kind==="fridge"?[.65,1,.6]:item.kind==="board"?[.75,1.2,.35]:item.kind==="battery"?[.8,1,.65]:item.kind==="inverter"?[.9,1.1,.5]:[.75,.7,.55];const col=item.id===selected?[.39,.82,.62,1]:[spec.color[0],spec.color[1],spec.color[2],1];drawCube(item.x,.35,item.z,size[0],size[1],size[2],col);drawCube(item.x,.35+size[1]/2+.035,item.z,size[0]*.72,.035,size[2]*.72,[.68,.79,.72,1]);}
+  // Links are rendered as thin, segmented cable spans.
+  for(const edge of edges){const a=items.find(i=>i.id===edge.from),b=items.find(i=>i.id===edge.to);if(!a||!b)continue;const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz),steps=Math.max(2,Math.ceil(len*8));for(let n=0;n<steps;n++){const t=n/steps;drawCube(a.x+dx*t,.12,a.z+dz*t,.065,.065,.065,[.35,.82,.64,1]);}}
+  gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);
+ },[items,edges,selected,camera]);
+ useEffect(()=>{draw();},[draw]);
+ const grouped=["Sources","Storage","Conversion","Distribution","Loads"];
+ const visible=catalog.filter(c=>c.label.toLowerCase().includes(search.toLowerCase()));
+ const status=totals.loads>totals.inverter?"overload":totals.loads>totals.inverter*.8?"near":"ok";
+ return <main className="powerhouse-app">
+  <header className="powerhouse-header"><div><div className="section-kicker">GRIDMIND / POWERHOUSE STUDIO</div><h1>Build your <span>power system.</span></h1><p>A 3D electrical workspace for solar, storage, boreholes and every load around your property.</p></div><div className="powerhouse-actions"><span className="studio-status"><i/> LOCAL PROJECT</span><button onClick={save} className="studio-save"><Save size={15}/>{saved?"Saved":"Save layout"}</button></div></header>
+  <section className="studio-metrics"><div><span>CONNECTED LOADS</span><strong>{(totals.loads/1000).toFixed(2)} <small>kW</small></strong></div><div><span>INVERTER CAPACITY</span><strong>{(totals.inverter/1000).toFixed(2)} <small>kW</small></strong></div><div><span>PV INSTALLED</span><strong>{(totals.pv/1000).toFixed(2)} <small>kWp</small></strong></div><div><span>BATTERY ENERGY*</span><strong>{(totals.batteries/1000).toFixed(2)} <small>kWh*</small></strong></div><div className={"system-state state-"+status}><span>SYSTEM CHECK</span><strong>{status==="overload"?"OVER CAPACITY":status==="near"?"HIGH LOADING":"LOAD OK"}</strong></div></section>
+  <div className="studio-layout">
+   <aside className="studio-library"><div className="studio-panel-title"><div><span className="section-kicker">01 / EQUIPMENT</span><h2>Component library</h2></div><Plus size={17}/></div><label className="library-search"><Search size={14}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Find equipment..."/></label>
+    {grouped.map(group=><div className="library-group" key={group}><span>{group}</span>{visible.filter(c=>c.group===group).map(c=><button key={c.kind} className={placing===c.kind?"library-item selected":"library-item"} onClick={()=>addItem(c.kind)}><i style={{background:"rgb("+c.color.map(v=>Math.round(v*255)).join(",")+")"}}/>{c.label}<Plus size={13}/></button>)}</div>)}
+    <div className="library-tip">Select an item to add it to the 3D floor. Drag equipment to reposition it.</div>
+   </aside>
+   <section className="studio-viewport"><div className="viewport-top"><div><span className="section-kicker">02 / 3D WORKSPACE</span><b>Electrical power house</b></div><div className="viewport-tools"><button onClick={()=>setCamera({yaw:-.72,pitch:.55,zoom:1})}><RotateCcw size={14}/> Reset view</button><button className={linkMode?"tool-active":""} onClick={connect}><Cable size={14}/>{linkMode?"Select second item":"Connect"}</button></div></div>
+    <div className="webgl-wrap"><canvas ref={canvasRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={e=>setCamera(c=>({...c,zoom:Math.max(.65,Math.min(1.65,c.zoom+e.deltaY*.001))}))}/><div className="scene-hint">DRAG EMPTY SPACE TO ORBIT · DRAG EQUIPMENT TO MOVE · SCROLL TO ZOOM</div><div className="scene-axis"><span>X</span><span>Y</span><span>Z</span></div></div>
+    <div className="viewport-bottom"><span><Grid3X3 size={13}/> Ground plane · 1m grid</span><span>{items.length} components · {edges.length} cable links</span><button onClick={()=>setRunning(v=>!v)}><Activity size={14}/>{running?"Stop simulation":"Run power simulation"}</button></div>
+   </section>
+   <aside className="studio-inspector"><div className="studio-panel-title"><div><span className="section-kicker">03 / INSPECTOR</span><h2>Equipment details</h2></div><Settings2 size={17}/></div>
+    {current?<><div className="selected-equipment"><span>{current.kind.toUpperCase()}</span><strong>{current.name}</strong><small>{catalog.find(c=>c.kind===current.kind)?.label}</small></div>
+     <label className="inspector-field">Equipment name<input value={current.name} onChange={e=>update(current.id,{name:e.target.value})}/></label>
+     <label className="inspector-field">Rated power (W)<input type="number" value={current.watts} onChange={e=>update(current.id,{watts:Math.max(0,Number(e.target.value))})}/></label>
+     <label className="inspector-field">Nominal voltage (V)<input type="number" value={current.voltage} onChange={e=>update(current.id,{voltage:Math.max(0,Number(e.target.value))})}/></label>
+     <label className="inspector-field">Rating / capacity<input type="number" value={current.rating} onChange={e=>update(current.id,{rating:Math.max(0,Number(e.target.value))})}/></label>
+     <label className="inspector-field">Quantity<input type="number" min="1" max="100" value={current.quantity} onChange={e=>update(current.id,{quantity:Math.max(1,Math.min(100,Number(e.target.value)))})}/></label>
+     <label className="inspector-field">Supply phase<select value={current.phase} onChange={e=>update(current.id,{phase:e.target.value as "single"|"three"})}><option value="single">Single phase</option><option value="three">Three phase</option></select></label>
+     <div className="inspector-position">POSITION <span>X {current.x.toFixed(1)}m · Z {current.z.toFixed(1)}m</span></div>
+     <button className="connect-button" onClick={connect}><Cable size={14}/>{linkMode?"Choose this as endpoint":"Create cable connection"}</button>
+     <button className="delete-equipment" onClick={remove}><Trash2 size={14}/> Remove component</button>
+    </>:<div className="empty-inspector">Select a component in the 3D workspace to inspect and edit its properties.</div>}
+   </aside>
+  </div>
+  <section className="engineering-row"><div className="engineering-card"><div className="studio-panel-title"><div><span className="section-kicker">04 / LIVE CHECKS</span><h2>System intelligence</h2></div><Activity size={17}/></div><div className="check-line"><span>Inverter nameplate loading</span><b className={status==="overload"?"bad":status==="near"?"warn":""}>{totals.inverter?Math.round(totals.loads/totals.inverter*100):"—"}%</b></div><div className="check-track"><i style={{width:Math.min(100,totals.inverter?totals.loads/totals.inverter*100:0)+"%"}}/></div><div className="check-line"><span>Installed PV array</span><b>{(totals.pv/1000).toFixed(2)} kWp</b></div><div className="check-line"><span>Approx. daily PV yield (5.5 PSH × 78%)</span><b>{(totals.pv/1000*5.5*.78).toFixed(2)} kWh</b></div><p className="engineering-disclaimer">*Battery figure is a power-nameplate placeholder, not stored kWh. Enter the battery energy capacity in the rating field to keep project records. These first-pass checks do not model startup transients, phase imbalance, voltage drop or protection coordination.</p></div>
+   <div className="engineering-card"><div className="studio-panel-title"><div><span className="section-kicker">05 / OPERATING SCENARIOS</span><h2>Solar availability</h2></div><Sun size={17}/></div><div className="solar-scenario"><button className={!cloud?"scenario-active":""} onClick={()=>{setCloud(false);setSolarNow(1300)}}><Sun size={16}/> Strong sun</button><button className={cloud?"scenario-active":""} onClick={()=>{setCloud(true);setSolarNow(450)}}><CircleAlert size={16}/> Cloud event</button></div><div className="check-line"><span>PV power available now</span><b>{solarNow.toLocaleString()} W</b></div><input className="scenario-slider" type="range" min="0" max={Math.max(1,totals.pv)} step="25" value={Math.min(solarNow,Math.max(1,totals.pv))} onChange={e=>setSolarNow(Number(e.target.value))}/><div className="scenario-note">{running?"Simulation running: compare available solar against connected demand.":"Run the simulation to explore the effect of changing solar availability. This is a steady-state estimate, not a motor-start waveform."}</div></div>
+  </section>
+  <footer className="studio-footer">GRIDMIND POWERHOUSE STUDIO <span>Interactive concept model · Verify all ratings, wiring and protection with a qualified electrical professional before installation.</span></footer>
+ </main>;
+}
